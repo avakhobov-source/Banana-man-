@@ -25,19 +25,19 @@ addEventListener('resize',resize);resize();
 
 var best=0;
 try{best=+localStorage.getItem('bm_best')||0;}catch(e){}
-var S={wallet:0,skin:0,owned:[0],last:'',streak:0};
+var S={wallet:0,skin:0,owned:[0],last:'',streak:0,mute:0,tut:0};
 try{var _s=JSON.parse(localStorage.getItem('bm_save')||'null');if(_s)for(var k in _s)S[k]=_s[k];}catch(e){}
 function save(){try{localStorage.setItem('bm_save',JSON.stringify(S));}catch(e){}}
-var banked=0,usedAd=false,adT=0,msg='',msgT=0;
+var banked=0,usedAd=false,adT=0,msg='',msgT=0,hintT=0;
 function earn(n){if(n>0){S.wallet+=n;save();}}
 
 var newBest=false,state='menu',score,lives,items,pops,px,target,slip,t,spawnT,hitFlash,combo;
-function reset(){newBest=false;banked=0;usedAd=false;runTop=null;chapter=0;boss=null;nextBoss=40;magnet=0;score=0;lives=3;items=[];pops=[];px=W/2;target=px;slip=0;t=0;spawnT=0.5;hitFlash=0;combo=0;}
+function reset(){hintT=S.tut?0:5;newBest=false;banked=0;usedAd=false;runTop=null;chapter=0;boss=null;nextBoss=40;magnet=0;score=0;lives=3;items=[];pops=[];px=W/2;target=px;slip=0;t=0;spawnT=0.5;hitFlash=0;combo=0;}
 reset();
 
 var wind=0;
 function spawn(){
-  var r=Math.random(),lvl=Math.min(1,score/60),type='b';
+  var r=Math.random(),lvl=Math.min(1,score/140),type='b';
   if(r<0.18+0.17*lvl)type='c';
   else if(r<0.30+0.25*lvl)type='p';
   else if(r<0.33+0.25*lvl)type='g';
@@ -50,8 +50,8 @@ function pop(x,y,txt,col){pops.push({x:x,y:y,txt:txt,col:col,life:1});}
 
 function update(dt){
   t+=dt;
-  var lvl=Math.min(1,score/60);
-  var speed=150+260*lvl;wind=lvl>0.3?lvl*200:0;
+  var lvl=Math.min(1,score/140);
+  var speed=150+330*lvl;if(hintT>0)hintT-=dt;wind=lvl>0.3?lvl*200:0;
   spawnT-=dt;
   if(magnet>0)magnet-=dt;
   if(!boss&&score>=nextBoss){boss={t:0,x:W/2,d:1,tk:1};nextBoss+=40;pop(W/2,H*0.3,'БОСС-ОБЕЗЬЯНА!','#c00');beep(150,.4,'square');}
@@ -77,7 +77,7 @@ function update(dt){
   }
   for(var j=pops.length-1;j>=0;j--){pops[j].y-=40*dt;pops[j].life-=dt*1.1;if(pops[j].life<=0)pops.splice(j,1);}
   if(hitFlash>0)hitFlash-=dt;storyCheck();
-  if(lives<=0){state='over';slip=0;boss=null;magnet=0;addTop(score);earn(score-banked);banked=score;if(score>best){best=score;newBest=true;try{localStorage.setItem('bm_best',best);}catch(e){}}}
+  if(lives<=0){state='over';slip=0;boss=null;magnet=0;S.tut=1;addTop(score);earn(score-banked);banked=score;if(score>best){best=score;newBest=true;try{localStorage.setItem('bm_best',best);}catch(e){}}}
 }
 
 var bcol='#f5d416';
@@ -152,6 +152,7 @@ function draw(){
   var h='';for(var i=0;i<3;i++)h+=i<lives?'❤️':'🖤';
   ctx.fillText(h,W-16,top+18);
   if(combo>=10){ctx.textAlign='center';ctx.font='bold 14px system-ui';ctx.fillText('Серия x'+Math.min(3,1+Math.floor(combo/10)),W/2,top+16);}
+  if(hintT>0&&state==='play'){ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#fff';ctx.strokeText('👆 Води пальцем и лови 🍌',W/2,H*0.5);ctx.fillStyle='#5b2bbf';ctx.fillText('👆 Води пальцем и лови 🍌',W/2,H*0.5);}
   if(state!=='play')overlay2();
 }
 function overlay(){
@@ -173,7 +174,7 @@ function overlay(){
 
 var actx=null;
 function initAudio(){try{if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){}}
-function beep(f,d,type){try{if(!actx)return;var o=actx.createOscillator(),g=actx.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.12,actx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+d);o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+d);}catch(e){}}
+function beep(f,d,type){try{if(!actx||S.mute)return;var o=actx.createOscillator(),g=actx.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.12,actx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+d);o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+d);}catch(e){}}
 function buzz(k){try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred(k);}catch(e){}}
 var SHARE_URL='https://t.me/banana_man_game_bot/Banana'; // после запуска в Telegram вставь сюда ссылку t.me/твой_бот/banana
 var SK=[{n:'Классика',p:0},{n:'Шляпа',p:150},{n:'Ниндзя',p:400},{n:'Король',p:900}];
@@ -219,6 +220,7 @@ function overlay2(){
     btn(bx,y,bw,48,'👥 Позвать друга',share);y+=60;
     btn(bx,y,bw,48,'👔 Скины',function(){state='skins';});
   }
+  if(state==='menu'||state==='over'){var mx=W-56,my=10+satop();btns.push({x:mx,y:my,w:46,h:46,fn:function(){S.mute=S.mute?0:1;save();}});ctx.fillStyle='rgba(255,255,255,.22)';rr(mx,my,46,46,12);ctx.fill();ctx.font='22px system-ui';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(S.mute?'🔇':'🔊',mx+23,my+31);}
   if(performance.now()<msgT){ctx.fillStyle='rgba(0,0,0,.8)';rr(W/2-120,H-70,240,36);ctx.fill();ctx.fillStyle='#fff';ctx.font='15px system-ui';ctx.textAlign='center';ctx.fillText(msg,W/2,H-47);}
 }
 var boss=null,nextBoss=40,magnet=0;
