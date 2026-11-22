@@ -165,7 +165,7 @@ var actx=null;
 function initAudio(){try{if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){}}
 function beep(f,d,type){try{if(!actx)return;var o=actx.createOscillator(),g=actx.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.12,actx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+d);o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+d);}catch(e){}}
 function buzz(k){try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred(k);}catch(e){}}
-var SHARE_URL=''; // после запуска в Telegram вставь сюда ссылку t.me/твой_бот/banana
+var SHARE_URL='https://t.me/banana_man_game_bot/Banana'; // после запуска в Telegram вставь сюда ссылку t.me/твой_бот/banana
 var SK=[{n:'Классика',p:0},{n:'Шляпа',p:50},{n:'Ниндзя',p:120},{n:'Король',p:250}];
 var btns=[];
 function today(){return new Date().toISOString().slice(0,10);}
@@ -173,12 +173,16 @@ function dailyReward(){var y=new Date(Date.now()-864e5).toISOString().slice(0,10
 function toast(m){msg=m;msgT=performance.now()+1800;}
 function rr(x,y,w,h){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,12);else ctx.rect(x,y,w,h);}
 function btn(x,y,w,h,label,fn,primary){btns.push({x:x,y:y,w:w,h:h,fn:fn});ctx.fillStyle=primary?'#f5d416':'rgba(255,255,255,.2)';rr(x,y,w,h);ctx.fill();ctx.fillStyle=primary?'#222':'#fff';ctx.font='bold 17px system-ui';ctx.textAlign='center';ctx.fillText(label,x+w/2,y+h/2+6);}
-function share(){var url=SHARE_URL||location.href,text='Лови бананы со мной! Мой рекорд: '+best+' 🍌';var link='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);try{if(tg&&tg.openTelegramLink)tg.openTelegramLink(link);else if(navigator.share)navigator.share({title:'Бананчик',text:text,url:url});else window.open(link,'_blank');}catch(e){}}
+function share(){var url=SHARE_URL||(location.origin+location.pathname),text='Лови бананы со мной! Мой рекорд: '+best+' 🍌';var link='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);try{if(tg&&tg.openTelegramLink){tg.openTelegramLink(link);return;}}catch(e){}
+  if(navigator.share){navigator.share({title:'Бананчик',text:text,url:url}).catch(function(e){if(!e||e.name!=='AbortError')copyLink(url,text);});return;}
+  copyLink(url,text);}
+function copyLink(url,text){var s=text+' '+url;try{navigator.clipboard.writeText(s).then(function(){toast('Ссылка скопирована — отправь другу');},function(){toast(url);});}catch(e){toast(url);}}
+cv.addEventListener('click',function(e){if(state==='play')return;for(var i=0;i<btns.length;i++){var b=btns[i];if(b.fn===share&&e.clientX>=b.x&&e.clientX<=b.x+b.w&&e.clientY>=b.y&&e.clientY<=b.y+b.h){share();return;}}});
 function play(){reset();state='play';}
 function claim(){if(S.last===today())return;var d=dailyReward();S.streak=d.st;S.last=today();earn(d.r);toast('Бонус дня: +'+d.r+' 🍌');}
 function startAd(){state='ad';adT=performance.now()+3000;} // ТУТ подключается рекламный SDK (например AdsGram); сейчас заглушка на 3 сек.
 function skinTap(i){if(S.owned.indexOf(i)>=0){S.skin=i;save();}else if(S.wallet>=SK[i].p){S.wallet-=SK[i].p;S.owned.push(i);S.skin=i;save();toast('Новый скин!');}else toast('Не хватает бананов');}
-function menuTap(x,y){if(state==='over'&&performance.now()-overAt<500)return;for(var i=0;i<btns.length;i++){var b=btns[i];if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){b.fn();return;}}}
+function menuTap(x,y){if(state==='over'&&performance.now()-overAt<500)return;for(var i=0;i<btns.length;i++){var b=btns[i];if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){if(b.fn!==share)b.fn();return;}}}
 function overlay2(){
   btns=[];ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,W,H);
   var bw=Math.min(280,W-48),bx=(W-bw)/2,y=Math.max(20,H/2-170);
